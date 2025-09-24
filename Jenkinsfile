@@ -1,5 +1,3 @@
-# Update Jenkinsfile with correct paths
-cat > Jenkinsfile << 'EOF'
 pipeline {
     agent any
     stages {
@@ -23,9 +21,3 @@ pipeline {
         }
     }
 }
-EOF
-
-# Push the updated Jenkinsfile
-git add Jenkinsfile
-git commit -m "Fix Docker and kubectl paths for Jenkins"
-git push origin main
