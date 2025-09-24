@@ -1,23 +1,31 @@
+# Update Jenkinsfile with correct paths
+cat > Jenkinsfile << 'EOF'
 pipeline {
     agent any
     stages {
         stage('Build') {
             steps {
-                sh 'docker build -t sameer017/my-app:latest .'
+                sh '/usr/local/bin/docker build -t sameer017/my-app:latest .'
             }
         }
         stage('Push') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-cred', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
-                    sh 'docker push sameer017/my-app:latest'
+                    sh 'echo $DOCKER_PASSWORD | /usr/local/bin/docker login -u $DOCKER_USERNAME --password-stdin'
+                    sh '/usr/local/bin/docker push sameer017/my-app:latest'
                 }
             }
         }
         stage('Deploy') {
             steps {
-                sh 'kubectl apply -f deployment.yaml'
+                sh '/opt/homebrew/bin/kubectl apply -f deployment.yaml'
             }
         }
     }
 }
+EOF
+
+# Push the updated Jenkinsfile
+git add Jenkinsfile
+git commit -m "Fix Docker and kubectl paths for Jenkins"
+git push origin main
