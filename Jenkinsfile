@@ -5,6 +5,7 @@ pipeline {
         DOCKER_IMAGE = "sameersen017/my-app"
         SONAR_PROJECT_KEY = "my-app-devsecops"
         PATH = "/opt/homebrew/opt/node@18/bin:/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
+        SONAR_TOKEN = credentials('sonar-token')
     }
     
     stages {
@@ -26,24 +27,21 @@ pipeline {
         
         stage('3. SonarQube Code Analysis') {
             steps {
-                script {
-                    withSonarQubeEnv('SonarQube-server') {
-                        sh """
-                            sonar-scanner \
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                            -Dsonar.sources=. \
-                            -Dsonar.exclusions=**/node_modules/**,**/services/** \
-                            -Dsonar.host.url=http://localhost:9000/sonar
-                        """
-                    }
-                }
+                sh """
+                    sonar-scanner \
+                    -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                    -Dsonar.sources=. \
+                    -Dsonar.exclusions=**/node_modules/**,**/services/** \
+                    -Dsonar.host.url=http://localhost:9000/sonar \
+                    -Dsonar.token=$SONAR_TOKEN
+                """
             }
         }
         
         stage('4. Quality Gate') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: false
+                timeout(time: 1, unit: 'minute') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
@@ -101,13 +99,14 @@ pipeline {
     
     post {
         always {
-            sh 'echo "8-stage pipeline completed - Build #${BUILD_ID}"'
+            echo "8-stage pipeline completed - Build #${BUILD_ID}"
+            cleanWs()
         }
         success {
-            sh 'echo "All stages passed successfully"'
+            echo "All stages passed successfully"
         }
         failure {
-            sh 'echo "Pipeline failed"'
+            echo "Pipeline failed"
         }
     }
 }
