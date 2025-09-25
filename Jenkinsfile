@@ -3,8 +3,6 @@ pipeline {
     
     environment {
         DOCKER_IMAGE = "sameersen017/my-app"
-        SONAR_PROJECT_KEY = "my-app-devsecops"
-        PATH = "/opt/homebrew/opt/node@18/bin:/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
     }
     
     stages {
@@ -24,30 +22,27 @@ pipeline {
             }
         }
         
-        stage('3. SonarQube Code Analysis') {
+        // This stage now contains the SonarQube analysis and quality gate
+        stage('3. SonarQube Analysis & Quality Gate') {
             steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                // This 'withSonarQubeEnv' block links the analysis and the quality gate
+                withSonarQubeEnv('sonarqube') {
                     sh """
                         sonar-scanner \
-                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.projectKey=my-app-devsecops \
                         -Dsonar.sources=. \
-                        -Dsonar.exclusions=**/node_modules/** \
-                        -Dsonar.host.url=http://localhost:9000 \
-                        -Dsonar.token=$SONAR_TOKEN
+                        -Dsonar.exclusions=**/node_modules/**
                     """
                 }
-            }
-        }
-        
-        stage('4. Quality Gate') {
-            steps {
+                
+                // The quality gate check is now a separate step after the analysis
                 timeout(time: 1, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
         }
         
-        stage('5. Docker Build') {
+        stage('4. Docker Build') {
             steps {
                 sh """
                     DOCKER_CONFIG=/tmp docker build -t ${DOCKER_IMAGE}:v1.\${BUILD_ID} .
@@ -56,7 +51,7 @@ pipeline {
             }
         }
         
-        stage('6. Trivy Security Scan') {
+        stage('5. Trivy Security Scan') {
             steps {
                 sh """
                     trivy image --severity HIGH,CRITICAL ${DOCKER_IMAGE}:latest
@@ -76,7 +71,7 @@ pipeline {
             }
         }
         
-        stage('7. Push to Registry') {
+        stage('6. Push to Registry') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-cred', 
                                                   passwordVariable: 'DOCKER_PASSWORD', 
@@ -90,7 +85,7 @@ pipeline {
             }
         }
         
-        stage('8. Deploy to Kubernetes') {
+        stage('7. Deploy to Kubernetes') {
             steps {
                 sh 'kubectl apply -f deployment.yaml'
                 sh 'kubectl rollout status deployment/my-app'
@@ -101,7 +96,7 @@ pipeline {
     
     post {
         always {
-            echo "8-stage pipeline completed - Build #${BUILD_ID}"
+            echo "Pipeline completed - Build #${BUILD_ID}"
             cleanWs()
         }
         success {
