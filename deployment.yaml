@@ -17,6 +17,27 @@ spec:
         image: sameersen017/my-app:latest
         ports:
         - containerPort: 3000
+        # Added health checks for stability
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        # Added resource limits to ensure fair resource usage
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "250m"
 ---
 apiVersion: v1
 kind: Service

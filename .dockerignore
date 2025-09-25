@@ -1,0 +1,17 @@
+Git files
+.git
+.gitignore
+
+Node.js dependency directory
+node_modules
+
+Build artifacts and logs
+npm-debug.log
+
+Jenkins and Docker config files
+Jenkinsfile
+Dockerfile
+.dockerignore
+
+Documentation
+README.md

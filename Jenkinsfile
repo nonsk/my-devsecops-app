@@ -5,7 +5,6 @@ pipeline {
         DOCKER_IMAGE = "sameersen017/my-app"
         SONAR_PROJECT_KEY = "my-app-devsecops"
         PATH = "/opt/homebrew/opt/node@18/bin:/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
-        SONAR_TOKEN = credentials('sonar-token')
     }
     
     stages {
@@ -27,20 +26,23 @@ pipeline {
         
         stage('3. SonarQube Code Analysis') {
             steps {
-                sh """
-                    sonar-scanner \
-                    -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                    -Dsonar.sources=. \
-                    -Dsonar.exclusions=**/node_modules/**,**/services/** \
-                    -Dsonar.host.url=http://localhost:9000/sonar \
-                    -Dsonar.token=$SONAR_TOKEN
-                """
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh """
+                        sonar-scanner \
+                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.sources=. \
+                        -Dsonar.exclusions=**/node_modules/** \
+                        -Dsonar.host.url=http://localhost:9000/sonar \
+                        -Dsonar.token=$SONAR_TOKEN
+                    """
+                }
             }
         }
         
         stage('4. Quality Gate') {
             steps {
-                timeout(time: 1, unit: 'minute') {
+                // Corrected the unit from 'minute' to 'MINUTES'
+                timeout(time: 1, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -57,11 +59,13 @@ pipeline {
         
         stage('6. Trivy Security Scan') {
             steps {
+                // Removed '|| true' to make the build fail on high/critical vulnerabilities
                 sh """
-                    trivy image --format json --output trivy-report.json ${DOCKER_IMAGE}:latest || true
+                    trivy image --severity HIGH,CRITICAL ${DOCKER_IMAGE}:latest
+                    trivy image --format json --output trivy-report.json ${DOCKER_IMAGE}:latest
                     trivy image --severity HIGH,CRITICAL \
                         --format template --template "@/opt/homebrew/share/trivy/templates/html.tpl" \
-                        --output trivy-report.html ${DOCKER_IMAGE}:latest || true
+                        --output trivy-report.html ${DOCKER_IMAGE}:latest
                 """
                 publishHTML([
                     allowMissing: false,
