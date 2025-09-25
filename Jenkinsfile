@@ -32,7 +32,7 @@ pipeline {
                         -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                         -Dsonar.sources=. \
                         -Dsonar.exclusions=**/node_modules/** \
-                        -Dsonar.host.url=http://localhost:9000/sonar \
+                        -Dsonar.host.url=http://localhost:9000 \
                         -Dsonar.token=$SONAR_TOKEN
                     """
                 }
@@ -41,7 +41,6 @@ pipeline {
         
         stage('4. Quality Gate') {
             steps {
-                // Corrected the unit from 'minute' to 'MINUTES'
                 timeout(time: 1, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
@@ -59,7 +58,6 @@ pipeline {
         
         stage('6. Trivy Security Scan') {
             steps {
-                // Removed '|| true' to make the build fail on high/critical vulnerabilities
                 sh """
                     trivy image --severity HIGH,CRITICAL ${DOCKER_IMAGE}:latest
                     trivy image --format json --output trivy-report.json ${DOCKER_IMAGE}:latest
@@ -114,3 +112,4 @@ pipeline {
         }
     }
 }
+

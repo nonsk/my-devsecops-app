@@ -1,7 +1,9 @@
-FROM node:16-alpine
+# Using a newer, supported Long-Term Support (LTS) version of Node.js
+FROM node:20-alpine
+
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm install --production
 COPY . .
-EXPOSE 3002
+EXPOSE 3000
 CMD ["npm", "start"]
