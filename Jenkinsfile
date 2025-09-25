@@ -3,6 +3,8 @@ pipeline {
     
     environment {
         DOCKER_IMAGE = "sameersen017/my-app"
+        // This line tells Jenkins where to find commands like 'npm'
+        PATH = "/opt/homebrew/opt/node@18/bin:/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
     }
     
     stages {
